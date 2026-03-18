@@ -1,7 +1,7 @@
 import { ConfigurationError } from './errors.js';
 
 export interface AppConfig {
-  metaAccessToken: string;
+  metaAccessToken?: string;
   mcpAuthToken: string;
   metaAdAccountId?: string;
   metaAppSecret?: string;
@@ -31,8 +31,8 @@ function validateHex(value: string, name: string): void {
 }
 
 export function loadAndValidateConfig(): AppConfig {
-  const metaAccessToken = requireEnv('META_ACCESS_TOKEN');
   const mcpAuthToken = requireEnv('MCP_AUTH_TOKEN');
+  const metaAccessToken = process.env.META_ACCESS_TOKEN || undefined;
 
   if (mcpAuthToken.length < 32) {
     console.warn('[config] WARNING: MCP_AUTH_TOKEN is shorter than 32 characters');
