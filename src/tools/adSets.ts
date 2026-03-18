@@ -3,6 +3,7 @@ import type { MetaApiClient } from '../meta-api/types.js';
 import type { TtlCache } from '../lib/cache.js';
 import type { Logger } from '../lib/logger.js';
 import * as adSetApi from '../meta-api/adSets.js';
+import { withErrorHandling } from './utils.js';
 import {
   ListAdSetsSchema,
   GetAdSetSchema,
@@ -15,13 +16,10 @@ export function registerAdSetTools(
   server: McpServer,
   client: MetaApiClient,
   cache: TtlCache,
-  logger: Logger
+  logger: Logger,
 ): void {
-  server.tool(
-    'list_ad_sets',
-    'List ad sets with pagination',
-    ListAdSetsSchema,
-    async (params) => {
+  server.tool('list_ad_sets', 'List ad sets with pagination', ListAdSetsSchema,
+    withErrorHandling('list_ad_sets', logger, async (params) => {
       const cacheKey = `list_ad_sets:${JSON.stringify(params)}`;
       const cached = cache.get<string>(cacheKey);
       if (cached) return { content: [{ type: 'text' as const, text: cached }] };
@@ -34,14 +32,11 @@ export function registerAdSetTools(
       const text = JSON.stringify(result);
       cache.set(cacheKey, text, 60_000);
       return { content: [{ type: 'text' as const, text }] };
-    }
+    }),
   );
 
-  server.tool(
-    'get_ad_set',
-    'Get ad set by ID',
-    GetAdSetSchema,
-    async (params) => {
+  server.tool('get_ad_set', 'Get ad set by ID', GetAdSetSchema,
+    withErrorHandling('get_ad_set', logger, async (params) => {
       const cacheKey = `get_ad_set:${params.ad_set_id}`;
       const cached = cache.get<string>(cacheKey);
       if (cached) return { content: [{ type: 'text' as const, text: cached }] };
@@ -50,14 +45,11 @@ export function registerAdSetTools(
       const text = JSON.stringify(result);
       cache.set(cacheKey, text, 60_000);
       return { content: [{ type: 'text' as const, text }] };
-    }
+    }),
   );
 
-  server.tool(
-    'create_ad_set',
-    'Create a new ad set',
-    CreateAdSetSchema,
-    async (params) => {
+  server.tool('create_ad_set', 'Create a new ad set', CreateAdSetSchema,
+    withErrorHandling('create_ad_set', logger, async (params) => {
       const result = await adSetApi.createAdSet(client, params.ad_account_id, {
         campaign_id: params.campaign_id,
         name: params.name,
@@ -75,14 +67,11 @@ export function registerAdSetTools(
       logger.info({ tool: 'create_ad_set', campaignId: params.campaign_id }, 'Write op');
       cache.invalidate('list_ad_sets:');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    }
+    }),
   );
 
-  server.tool(
-    'update_ad_set',
-    'Update ad set',
-    UpdateAdSetSchema,
-    async (params) => {
+  server.tool('update_ad_set', 'Update ad set', UpdateAdSetSchema,
+    withErrorHandling('update_ad_set', logger, async (params) => {
       await adSetApi.updateAdSet(client, params.ad_set_id, {
         name: params.name,
         status: params.status,
@@ -94,19 +83,16 @@ export function registerAdSetTools(
       cache.invalidate('list_ad_sets:');
       cache.invalidate(`get_ad_set:${params.ad_set_id}`);
       return { content: [{ type: 'text' as const, text: 'OK' }] };
-    }
+    }),
   );
 
-  server.tool(
-    'delete_ad_set',
-    'Delete ad set',
-    DeleteAdSetSchema,
-    async (params) => {
+  server.tool('delete_ad_set', 'Delete ad set', DeleteAdSetSchema,
+    withErrorHandling('delete_ad_set', logger, async (params) => {
       await adSetApi.deleteAdSet(client, params.ad_set_id);
       logger.info({ tool: 'delete_ad_set', adSetId: params.ad_set_id }, 'Write op');
       cache.invalidate('list_ad_sets:');
       cache.invalidate(`get_ad_set:${params.ad_set_id}`);
       return { content: [{ type: 'text' as const, text: 'OK' }] };
-    }
+    }),
   );
 }

@@ -3,6 +3,7 @@ import type { MetaApiClient } from '../meta-api/types.js';
 import type { TtlCache } from '../lib/cache.js';
 import type { Logger } from '../lib/logger.js';
 import * as creativeApi from '../meta-api/creatives.js';
+import { withErrorHandling } from './utils.js';
 import { CreateAdCreativeSchema, GetAdCreativeSchema } from '../schemas/creatives.js';
 
 function buildObjectStorySpec(params: {
@@ -40,13 +41,10 @@ export function registerCreativeTools(
   server: McpServer,
   client: MetaApiClient,
   cache: TtlCache,
-  logger: Logger
+  logger: Logger,
 ): void {
-  server.tool(
-    'create_ad_creative',
-    'Create ad creative (image or video)',
-    CreateAdCreativeSchema,
-    async (params) => {
+  server.tool('create_ad_creative', 'Create ad creative (image or video)', CreateAdCreativeSchema,
+    withErrorHandling('create_ad_creative', logger, async (params) => {
       if (!params.image_url && !params.video_id) {
         throw new Error('Must provide image_url or video_id');
       }
@@ -70,14 +68,11 @@ export function registerCreativeTools(
       });
       logger.info({ tool: 'create_ad_creative', adAccountId: params.ad_account_id }, 'Write op');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    }
+    }),
   );
 
-  server.tool(
-    'get_ad_creative',
-    'Get creative by ID',
-    GetAdCreativeSchema,
-    async (params) => {
+  server.tool('get_ad_creative', 'Get creative by ID', GetAdCreativeSchema,
+    withErrorHandling('get_ad_creative', logger, async (params) => {
       const cacheKey = `get_ad_creative:${params.creative_id}`;
       const cached = cache.get<string>(cacheKey);
       if (cached) return { content: [{ type: 'text' as const, text: cached }] };
@@ -86,6 +81,6 @@ export function registerCreativeTools(
       const text = JSON.stringify(result);
       cache.set(cacheKey, text, 60_000);
       return { content: [{ type: 'text' as const, text }] };
-    }
+    }),
   );
 }

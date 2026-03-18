@@ -10,6 +10,7 @@ describe('TtlCache', () => {
   });
 
   afterEach(() => {
+    cache.destroy();
     vi.useRealTimers();
   });
 
@@ -45,5 +46,19 @@ describe('TtlCache', () => {
     cache.set('key1', 'old', 60_000);
     cache.set('key1', 'new', 60_000);
     expect(cache.get('key1')).toBe('new');
+  });
+
+  it('sweep_만료항목자동제거', () => {
+    cache.set('short', 'val', 10_000);
+    cache.set('long', 'val', 120_000);
+    vi.advanceTimersByTime(60_001);
+    expect(cache.get('short')).toBeUndefined();
+    expect(cache.get('long')).toBe('val');
+  });
+
+  it('destroy_캐시정리', () => {
+    cache.set('key1', 'val', 60_000);
+    cache.destroy();
+    expect(cache.get('key1')).toBeUndefined();
   });
 });

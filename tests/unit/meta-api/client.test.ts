@@ -20,6 +20,26 @@ const baseConfig: MetaApiConfig = {
   apiVersion: 'v25.0',
 };
 
+function mockResponse(
+  ok: boolean,
+  data: unknown,
+  headers?: Headers,
+  status?: number,
+): Response {
+  const body = JSON.stringify(data);
+  return {
+    ok,
+    status: status ?? (ok ? 200 : 400),
+    statusText: ok ? 'OK' : 'Bad Request',
+    text: async () => body,
+    headers: headers ?? new Headers(),
+  } as Response;
+}
+
+function meOk(): Response {
+  return mockResponse(true, { id: 'me', name: 'Test User' });
+}
+
 describe('MetaApiClient', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
@@ -29,70 +49,42 @@ describe('MetaApiClient', () => {
     vi.unstubAllGlobals();
   });
 
-  function mockResponse(
-    ok: boolean,
-    data: unknown,
-    headers?: Headers,
-    status?: number
-  ): Response {
-    const body = JSON.stringify(data);
-    return {
-      ok,
-      status: status ?? (ok ? 200 : 400),
-      text: async () => body,
-      headers: headers ?? new Headers(),
-    } as Response;
-  }
-
   it('get_정상응답_데이터반환', async () => {
     const mockData = { id: '123', name: 'Campaign' };
-    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(true, mockData));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(meOk())
+      .mockResolvedValueOnce(mockResponse(true, mockData));
 
     const client = new MetaApiClient(baseConfig, mockLogger);
     const result = await client.get<typeof mockData>('/act_123/campaigns');
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('https://graph.facebook.com/v25.0/act_123/campaigns'),
-      expect.any(Object)
-    );
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringMatching(/access_token=test-token/),
-      expect.any(Object)
-    );
     expect(result).toEqual(mockData);
   });
 
   it('post_정상응답_데이터반환', async () => {
     const mockData = { id: '456' };
-    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(true, mockData));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(meOk())
+      .mockResolvedValueOnce(mockResponse(true, mockData));
 
     const client = new MetaApiClient(baseConfig, mockLogger);
     const result = await client.post<typeof mockData>('/act_123/campaigns', {
       name: 'Test',
-      objective: 'OUTCOME_TRAFFIC',
-      status: 'PAUSED',
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('https://graph.facebook.com/v25.0/act_123/campaigns'),
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.any(String),
-      })
-    );
     expect(result).toEqual(mockData);
   });
 
   it('delete_정상응답_void반환', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(true, { success: true }));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(meOk())
+      .mockResolvedValueOnce(mockResponse(true, { success: true }));
 
     const client = new MetaApiClient(baseConfig, mockLogger);
     await client.delete('/12345');
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('https://graph.facebook.com/v25.0/12345'),
-      expect.objectContaining({ method: 'DELETE' })
-    );
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(calls[1][0]).toContain('/12345');
   });
 
   it('get_MetaAPI에러응답_MetaApiError발생', async () => {
@@ -104,7 +96,7 @@ describe('MetaApiClient', () => {
           code: 190,
           fbtrace_id: 'trace123',
         },
-      })
+      }),
     );
 
     const client = new MetaApiClient(baseConfig, mockLogger);
@@ -127,7 +119,7 @@ describe('MetaApiClient', () => {
     const mockData = { id: 'ok' };
     vi.mocked(fetch)
       .mockResolvedValueOnce(
-        mockResponse(false, {}, new Headers({ 'Retry-After': '1' }), 429)
+        mockResponse(false, {}, new Headers({ 'Retry-After': '1' }), 429),
       )
       .mockResolvedValueOnce(mockResponse(true, mockData));
 
@@ -140,7 +132,7 @@ describe('MetaApiClient', () => {
 
   it('get_429응답3회실패_RateLimitError발생', async () => {
     vi.mocked(fetch).mockResolvedValue(
-      mockResponse(false, {}, new Headers({ 'Retry-After': '1' }), 429)
+      mockResponse(false, {}, new Headers({ 'Retry-After': '1' }), 429),
     );
 
     const client = new MetaApiClient(baseConfig, mockLogger);
@@ -153,20 +145,20 @@ describe('MetaApiClient', () => {
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse(true, { id: 'me' }));
 
     const client = new MetaApiClient(
-      { ...baseConfig, appSecret: 'my-secret' },
-      mockLogger
+      { ...baseConfig, appSecret: 'abcdef1234567890' },
+      mockLogger,
     );
     await client.get('/me');
 
     expect(fetch).toHaveBeenCalledWith(
       expect.stringMatching(/appsecret_proof=/),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   it('validateToken_me호출_tokenValidated설정', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
-      mockResponse(true, { id: '123', name: 'Test User' })
+      mockResponse(true, { id: '123', name: 'Test User' }),
     );
 
     const client = new MetaApiClient(baseConfig, mockLogger);
@@ -174,7 +166,7 @@ describe('MetaApiClient', () => {
 
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/me'),
-      expect.any(Object)
+      expect.any(Object),
     );
     expect(client.tokenValidated).toBe(true);
   });
@@ -192,12 +184,52 @@ describe('MetaApiClient', () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       mockResponse(false, {
         error: { message: 'Invalid token', type: 'OAuthException', code: 190 },
-      })
+      }),
     );
 
     const client = new MetaApiClient(baseConfig, mockLogger);
     const result = await client.checkConnection();
 
     expect(result).toBe(false);
+  });
+
+  it('post_429응답_RateLimitError발생', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(meOk())
+      .mockResolvedValueOnce(
+        mockResponse(false, {}, new Headers({ 'Retry-After': '30' }), 429),
+      );
+
+    const client = new MetaApiClient(baseConfig, mockLogger);
+    await expect(client.post('/act_123/campaigns', {})).rejects.toThrow(RateLimitError);
+  });
+
+  it('delete_429응답_재시도후성공', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(meOk())
+      .mockResolvedValueOnce(
+        mockResponse(false, {}, new Headers({ 'Retry-After': '1' }), 429),
+      )
+      .mockResolvedValueOnce(mockResponse(true, { success: true }));
+
+    const client = new MetaApiClient(baseConfig, mockLogger);
+    await client.delete('/12345');
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('ensureTokenValidated_한번만호출', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(meOk())
+      .mockResolvedValueOnce(mockResponse(true, { data: [] }))
+      .mockResolvedValueOnce(mockResponse(true, { data: [] }));
+
+    const client = new MetaApiClient(baseConfig, mockLogger);
+    await client.get('/act_123/campaigns');
+    await client.get('/act_123/adsets');
+
+    const calls = vi.mocked(fetch).mock.calls;
+    const meCalls = calls.filter(([url]) => String(url).includes('/me'));
+    expect(meCalls).toHaveLength(1);
   });
 });

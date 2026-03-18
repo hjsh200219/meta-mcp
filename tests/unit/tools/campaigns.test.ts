@@ -90,12 +90,18 @@ describe('registerCampaignTools', () => {
     expect(cache.get('list_campaigns:foo')).toBeUndefined();
   });
 
-  it('list_campaigns_에러발생_throw', async () => {
+  it('list_campaigns_에러발생_isError응답반환', async () => {
     vi.mocked(mockClient.get).mockRejectedValue(new Error('API error'));
 
     const tools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<unknown> }> })._registeredTools;
     const handler = tools.list_campaigns?.handler;
     expect(handler).toBeDefined();
-    if (handler) await expect(handler({ ad_account_id: 'act_123' })).rejects.toThrow();
+    if (handler) {
+      const result = await handler({ ad_account_id: 'act_123' });
+      expect(result).toMatchObject({
+        isError: true,
+        content: [{ type: 'text', text: expect.stringContaining('API error') }],
+      });
+    }
   });
 });

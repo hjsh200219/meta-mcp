@@ -12,7 +12,7 @@ function computeAppSecretProof(accessToken: string, appSecret: string): string {
 function buildQueryParams(
   accessToken: string,
   appSecret: string | undefined,
-  extra?: Record<string, string>
+  extra?: Record<string, string>,
 ): Record<string, string> {
   const params: Record<string, string> = { access_token: accessToken, ...extra };
   if (appSecret) {
@@ -35,12 +35,7 @@ async function handleMetaError(res: Response, body: unknown): Promise<never> {
   if (data?.error) {
     throw MetaApiError.fromResponse(data);
   }
-  throw new MetaApiError(
-    `HTTP ${res.status}: ${res.statusText}`,
-    res.status,
-    0,
-    ''
-  );
+  throw new MetaApiError(`HTTP ${res.status}: ${res.statusText}`, res.status, 0, '');
 }
 
 function getRetryDelay(res: Response, attempt: number): number {
@@ -58,24 +53,29 @@ function sleep(ms: number): Promise<void> {
 
 export class MetaApiClient {
   readonly baseUrl: string;
-  readonly accessToken: string;
-  readonly appSecret: string | undefined;
+  private readonly _accessToken: string;
+  private readonly _appSecret: string | undefined;
   readonly logger: Logger;
   tokenValidated = false;
   private validateTokenPromise: Promise<void> | null = null;
 
   constructor(config: MetaApiConfig, logger: Logger) {
     this.baseUrl = `https://graph.facebook.com/${config.apiVersion}`;
-    this.accessToken = config.accessToken;
-    this.appSecret = config.appSecret;
+    this._accessToken = config.accessToken;
+    this._appSecret = config.appSecret;
     this.logger = logger;
   }
 
+  private async ensureTokenValidated(): Promise<void> {
+    if (this.tokenValidated) return;
+    await this.validateToken();
+  }
+
   async get<T>(path: string, params?: Record<string, string>): Promise<T> {
+    if (path !== '/me') await this.ensureTokenValidated();
+
     const merged = params ? { ...params } : {};
-    const qs = toQueryString(
-      buildQueryParams(this.accessToken, this.appSecret, merged)
-    );
+    const qs = toQueryString(buildQueryParams(this._accessToken, this._appSecret, merged));
     const url = `${this.baseUrl}${path}?${qs}`;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -92,12 +92,7 @@ export class MetaApiClient {
       }
 
       if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After');
-        const sec = retryAfter ? parseInt(retryAfter, 10) : 60;
-        throw new RateLimitError(
-          'Rate limit exceeded after retries',
-          Number.isNaN(sec) ? 60 : sec
-        );
+        throw new RateLimitError('Rate limit exceeded after retries', parseRetryAfter(res));
       }
 
       await handleMetaError(res, body);
@@ -107,9 +102,9 @@ export class MetaApiClient {
   }
 
   async post<T>(path: string, data: unknown): Promise<T> {
-    const qs = toQueryString(
-      buildQueryParams(this.accessToken, this.appSecret)
-    );
+    await this.ensureTokenValidated();
+
+    const qs = toQueryString(buildQueryParams(this._accessToken, this._appSecret));
     const url = `${this.baseUrl}${path}?${qs}`;
     const res = await fetch(url, {
       method: 'POST',
@@ -117,18 +112,39 @@ export class MetaApiClient {
       body: JSON.stringify(data),
     });
     const body = await parseJsonOrEmpty(res);
+
+    if (res.status === 429) {
+      throw new RateLimitError('Rate limit exceeded', parseRetryAfter(res));
+    }
     if (!res.ok) await handleMetaError(res, body);
     return body as T;
   }
 
   async delete(path: string): Promise<void> {
-    const qs = toQueryString(
-      buildQueryParams(this.accessToken, this.appSecret)
-    );
+    await this.ensureTokenValidated();
+
+    const qs = toQueryString(buildQueryParams(this._accessToken, this._appSecret));
     const url = `${this.baseUrl}${path}?${qs}`;
-    const res = await fetch(url, { method: 'DELETE' });
-    const body = await parseJsonOrEmpty(res);
-    if (!res.ok) await handleMetaError(res, body);
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const res = await fetch(url, { method: 'DELETE' });
+      const body = await parseJsonOrEmpty(res);
+
+      if (res.ok) return;
+
+      if (res.status === 429 && attempt < MAX_RETRIES) {
+        const delay = getRetryDelay(res, attempt);
+        this.logger.warn({ attempt, delay }, 'Rate limited on DELETE, retrying');
+        await sleep(delay);
+        continue;
+      }
+
+      if (res.status === 429) {
+        throw new RateLimitError('Rate limit exceeded after retries', parseRetryAfter(res));
+      }
+
+      await handleMetaError(res, body);
+    }
   }
 
   async validateToken(): Promise<void> {
@@ -148,4 +164,11 @@ export class MetaApiClient {
       return false;
     }
   }
+}
+
+function parseRetryAfter(res: Response): number {
+  const retryAfter = res.headers.get('Retry-After');
+  if (!retryAfter) return 60;
+  const sec = parseInt(retryAfter, 10);
+  return Number.isNaN(sec) ? 60 : sec;
 }

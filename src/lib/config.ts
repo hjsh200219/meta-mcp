@@ -18,16 +18,40 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function validateApiVersion(version: string): void {
+  if (!/^v\d+\.\d+$/.test(version)) {
+    throw new ConfigurationError(`META_API_VERSION must match v{number}.{number}, got: ${version}`);
+  }
+}
+
+function validateHex(value: string, name: string): void {
+  if (!/^[0-9a-fA-F]+$/.test(value)) {
+    throw new ConfigurationError(`${name} must be a hex string`);
+  }
+}
+
 export function loadAndValidateConfig(): AppConfig {
   const metaAccessToken = requireEnv('META_ACCESS_TOKEN');
   const mcpAuthToken = requireEnv('MCP_AUTH_TOKEN');
+
+  if (mcpAuthToken.length < 32) {
+    console.warn('[config] WARNING: MCP_AUTH_TOKEN is shorter than 32 characters');
+  }
+
+  const metaApiVersion = process.env.META_API_VERSION || 'v25.0';
+  validateApiVersion(metaApiVersion);
+
+  const metaAppSecret = process.env.META_APP_SECRET || undefined;
+  if (metaAppSecret) {
+    validateHex(metaAppSecret, 'META_APP_SECRET');
+  }
 
   return {
     metaAccessToken,
     mcpAuthToken,
     metaAdAccountId: process.env.META_AD_ACCOUNT_ID || undefined,
-    metaAppSecret: process.env.META_APP_SECRET || undefined,
-    metaApiVersion: process.env.META_API_VERSION || 'v25.0',
+    metaAppSecret,
+    metaApiVersion,
     port: Number(process.env.PORT) || 3000,
     logLevel: process.env.LOG_LEVEL || 'info',
   };

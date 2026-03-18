@@ -57,6 +57,14 @@ describe('loadAndValidateConfig', () => {
     expect(config.metaApiVersion).toBe('v24.0');
   });
 
+  it('META_API_VERSION_잘못된형식_에러발생', () => {
+    process.env.META_ACCESS_TOKEN = 'valid_token';
+    process.env.MCP_AUTH_TOKEN = 'a'.repeat(32);
+    process.env.META_API_VERSION = 'invalid';
+
+    expect(() => loadAndValidateConfig()).toThrow('v{number}.{number}');
+  });
+
   it('META_AD_ACCOUNT_ID_선택적설정', () => {
     process.env.META_ACCESS_TOKEN = 'valid_token';
     process.env.MCP_AUTH_TOKEN = 'a'.repeat(32);
@@ -66,7 +74,7 @@ describe('loadAndValidateConfig', () => {
     expect(config.metaAdAccountId).toBe('act_123456');
   });
 
-  it('META_APP_SECRET_선택적설정', () => {
+  it('META_APP_SECRET_선택적hex설정', () => {
     process.env.META_ACCESS_TOKEN = 'valid_token';
     process.env.MCP_AUTH_TOKEN = 'a'.repeat(32);
     process.env.META_APP_SECRET = 'abcdef1234567890';
@@ -75,10 +83,31 @@ describe('loadAndValidateConfig', () => {
     expect(config.metaAppSecret).toBe('abcdef1234567890');
   });
 
+  it('META_APP_SECRET_비hex문자_에러발생', () => {
+    process.env.META_ACCESS_TOKEN = 'valid_token';
+    process.env.MCP_AUTH_TOKEN = 'a'.repeat(32);
+    process.env.META_APP_SECRET = 'not-a-hex-string!';
+
+    expect(() => loadAndValidateConfig()).toThrow('hex');
+  });
+
   it('빈META_ACCESS_TOKEN_에러발생', () => {
     process.env.META_ACCESS_TOKEN = '';
     process.env.MCP_AUTH_TOKEN = 'a'.repeat(32);
 
     expect(() => loadAndValidateConfig()).toThrow('META_ACCESS_TOKEN');
+  });
+
+  it('짧은MCP_AUTH_TOKEN_경고출력', () => {
+    process.env.META_ACCESS_TOKEN = 'valid_token';
+    process.env.MCP_AUTH_TOKEN = 'short';
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const config = loadAndValidateConfig();
+    expect(config.mcpAuthToken).toBe('short');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('shorter than 32'),
+    );
+    warnSpy.mockRestore();
   });
 });
