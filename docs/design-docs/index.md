@@ -4,6 +4,7 @@
 
 | Document | Status | Description |
 |----------|--------|-------------|
+| [core-beliefs.md](core-beliefs.md) | Active | Foundational design principles |
 | [layer-rules.md](layer-rules.md) | Active | Layer dependency rules and import constraints |
 
 ## How to add a design doc
