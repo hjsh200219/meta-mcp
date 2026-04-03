@@ -156,6 +156,12 @@ src/
   middleware/
     auth.ts             Bearer token middleware (timing-safe)
 tests/
-  unit/                 Mirrors src/ (22 test files)
-  integration/          server.test.ts (supertest)
+  unit/
+    lib/                cache, config, errors, logger
+    meta-api/           accounts, ads, adSets, campaigns, client, creatives, insights
+    middleware/          auth
+    schemas/            accounts, ads, adSets, campaigns, common, creatives, insights
+    tools/              accounts, campaigns
+  integration/
+    server.test.ts      Full HTTP mode test via supertest
 ```

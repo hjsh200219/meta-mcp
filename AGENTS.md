@@ -31,7 +31,7 @@ tests/
 
 ## Architecture Overview
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for full overview and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for layer details.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for full overview including layer details and test structure.
 
 Layer stack: Entrypoints -> MCP Server -> Tools -> Schemas / Meta-API -> Lib / Middleware
 
@@ -64,25 +64,19 @@ See [docs/design-docs/layer-rules.md](docs/design-docs/layer-rules.md).
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| Agent Map | [AGENTS.md](AGENTS.md) | Navigation hub for agents |
-| Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | System overview, layer diagram, data flow |
-| Architecture (layers) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layer details and test structure |
+| Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | System overview, layer diagram, data flow, test structure |
+| Design Patterns | [docs/DESIGN.md](docs/DESIGN.md) | Key patterns |
 | Core Beliefs | [docs/design-docs/core-beliefs.md](docs/design-docs/core-beliefs.md) | Design principles |
 | Layer Rules | [docs/design-docs/layer-rules.md](docs/design-docs/layer-rules.md) | Import constraints |
-| Design Docs Index | [docs/design-docs/index.md](docs/design-docs/index.md) | All design decisions |
-| Design Patterns | [docs/DESIGN.md](docs/DESIGN.md) | Key patterns |
-| Frontend / Interfaces | [docs/FRONTEND.md](docs/FRONTEND.md) | HTTP endpoints, no UI |
 | Quality Standards | [docs/QUALITY.md](docs/QUALITY.md) | Type safety, testing, linting |
 | Quality Score | [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md) | Current quality metrics |
 | Reliability | [docs/RELIABILITY.md](docs/RELIABILITY.md) | Retry, caching, shutdown |
 | Security | [docs/SECURITY.md](docs/SECURITY.md) | Auth, secrets, threats |
 | Product Sense | [docs/PRODUCT_SENSE.md](docs/PRODUCT_SENSE.md) | Product context |
 | Plans & Roadmap | [docs/PLANS.md](docs/PLANS.md) | Priorities and roadmap |
-| Execution Plans | [docs/exec-plans/](docs/exec-plans/) | Active and completed plans |
 | Tech Debt | [docs/exec-plans/tech-debt-tracker.md](docs/exec-plans/tech-debt-tracker.md) | Known debt |
 | Data Schema | [docs/generated/db-schema.md](docs/generated/db-schema.md) | Domain types and cache keys |
-| Product Specs | [docs/product-specs/index.md](docs/product-specs/index.md) | Feature specs |
-| References | [docs/references/](docs/references/) | External references |
+| Frontend / Interfaces | [docs/FRONTEND.md](docs/FRONTEND.md) | HTTP endpoints, no UI |
 
 ## Tech Stack
 
