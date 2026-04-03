@@ -91,7 +91,7 @@ Node.js >= 20, TypeScript (strict), @modelcontextprotocol/sdk, Express 5, Zod 4,
 # Agent Map
 
 This file is the navigation hub for AI agents working on the meta-mcp codebase.
-Read `agent.md` (symlinked from CLAUDE.md) for project rules and quick commands.
+Read `AGENTS.md` (symlinked as CLAUDE.md) for project rules and quick commands.
 
 ## Project Identity
 
@@ -126,7 +126,7 @@ Import direction: top layers import from bottom layers, never upward.
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| Agent Instructions | [agent.md](agent.md) | Core rules, patterns, commands |
+| Agent Instructions | [AGENTS.md](AGENTS.md) | Core rules, patterns, commands |
 | Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | System overview, layer diagram, data flow |
 | Architecture (detailed) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Full architecture with all details |
 | Design Docs | [docs/design-docs/index.md](docs/design-docs/index.md) | Design decisions and ADRs |

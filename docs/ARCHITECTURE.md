@@ -62,6 +62,7 @@ Each tool module exports a `registerXxxTools()` function that binds Zod-validate
 | `ads.ts` | `list_ads`, `get_ad`, `create_ad`, `update_ad`, `delete_ad` |
 | `creatives.ts` | `create_ad_creative`, `get_ad_creative` |
 | `insights.ts` | `get_campaign_insights`, `get_ad_set_insights`, `get_ad_insights` |
+| `utils.ts` | `withErrorHandling()` wrapper (shared by all tool modules) |
 
 ### 5. Schemas (`src/schemas/`)
 

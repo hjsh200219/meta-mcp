@@ -156,6 +156,6 @@ src/
   middleware/
     auth.ts             Bearer token middleware (timing-safe)
 tests/
-  unit/                 Mirrors src/ (18 test files)
+  unit/                 Mirrors src/ (22 test files)
   integration/          server.test.ts (supertest)
 ```
