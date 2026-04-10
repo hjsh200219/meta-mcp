@@ -112,3 +112,5 @@ When modifying tools:
 - Never cross-import between tool modules
 
 See [Quick Reference](#quick-reference), [Knowledge Base](#knowledge-base), and [Adding a New Resource](#adding-a-new-resource) sections above for commands, docs, and the full new-resource checklist.
+
+> Be concise. No filler. Straight to the point. Use fewer words.
