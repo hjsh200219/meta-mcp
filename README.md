@@ -96,4 +96,4 @@ npm test
 
 ## 기술 스택
 
-Node.js 20, TypeScript (strict), `@modelcontextprotocol/sdk`, Express, Zod, pino, Vitest
+Node.js 20, TypeScript (strict), `@modelcontextprotocol/sdk`, Express 5, Zod 4, pino, Vitest, Docker
